@@ -1,0 +1,56 @@
+name: CI Pipeline
+
+# トリガーイベントの定義
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+# 環境変数
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16, 18, 20]
+    
+    steps:
+    # チェックアウト
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # Node.js のセットアップ
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    # 依存関係のインストール
+    - name: Install dependencies
+      run: npm ci
+    
+    # リンターとフォーマッター（オプション）
+    - name: Run linter
+      run: npm run lint --if-present
+    
+    # テストの実行
+    - name: Run tests
+      run: npm test
+    
+    # カバレッジレポートの生成
+    - name: Generate coverage report
+      run: npm run test:coverage
+    
+    # カバレッジレポートのアップロード
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
